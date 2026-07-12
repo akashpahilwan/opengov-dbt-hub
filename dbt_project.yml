@@ -26,3 +26,7 @@ models:
     marts:
       +schema: MARTS_REVOPS
       +materialized: table
+      # Apply Snowflake column tags (meta.pii_tag in _models.yml) right after
+      # each mart builds — governance travels RAW -> marts. No-op in dev / when
+      # no column declares a tag. Needs REVOPS_DEVELOPER to hold APPLY TAG.
+      +post-hook: "{{ apply_column_tags() }}"

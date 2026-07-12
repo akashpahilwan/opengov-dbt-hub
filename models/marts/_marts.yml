@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: mart_revops__pipeline
+    description: >
+      RevOps pipeline mart — opportunities enriched with account context and
+      measures (days_to_close, pipeline_stage_bucket, weighted_amount).
+      PUBLIC dbt Mesh model: domain spoke projects reference it cross-project
+      (read-only) and build their own MARTS_<domain>.
+    access: public
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: opportunity_id
+        data_type: varchar
+        tests: [not_null, unique]
+      - name: account_id
+        data_type: varchar
+      - name: account_name
+        data_type: varchar
+      - name: industry
+        data_type: varchar
+      - name: customer_tier
+        data_type: varchar
+      - name: billing_state
+        data_type: varchar
+      - name: owner_id
+        data_type: varchar
+      - name: stage_name
+        data_type: varchar
+      - name: amount
+        data_type: number
+      - name: close_date
+        data_type: date
+      - name: created_date
+        data_type: timestamp_ntz
+      - name: days_to_close
+        data_type: number
+      - name: pipeline_stage_bucket
+        data_type: varchar
+        tests:
+          - accepted_values:
+              values: ['Early Stage', 'Late Stage', 'Closed']
+      - name: weighted_amount
+        data_type: number

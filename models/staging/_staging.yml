@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: stg_salesforce__accounts
+    description: Cleaned account dimension (ARR excluded — masked PII, stays in RAW).
+    columns:
+      - name: account_id
+        tests: [not_null, unique]
+
+  - name: stg_salesforce__opportunities
+    description: Cleaned opportunities (soft-deleted excluded, stage_name normalized).
+    columns:
+      - name: opportunity_id
+        tests: [not_null, unique]
+      - name: account_id
+        description: FK to accounts.
+        tests:
+          - relationships:
+              to: ref('stg_salesforce__accounts')
+              field: account_id
+      - name: stage_name
+        tests:
+          - accepted_values:
+              values: ['PROSPECTING', 'QUALIFICATION', 'NEGOTIATION', 'CLOSED WON', 'CLOSED LOST']
+
+  - name: stg_product_events__page_views
+    description: Deduplicated (one row per event_id), contract-valid page views.
+    columns:
+      - name: event_id
+        tests: [not_null, unique]

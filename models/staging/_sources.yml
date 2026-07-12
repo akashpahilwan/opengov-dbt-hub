@@ -1,0 +1,27 @@
+version: 2
+
+sources:
+  # Fivetran-loaded Salesforce RAW (owned by REVOPS_INGESTION_FIVETRAN)
+  - name: salesforce
+    database: "{{ target.database }}"
+    schema: SALESFORCE_RAW_FIVETRAN
+    description: Salesforce CRM, landed by Fivetran. dbt's source contract is our boundary.
+    tables:
+      - name: account
+        description: Account master. ARR is masked (GOVERNANCE.PII_FINANCIAL) — never selected into models.
+        columns:
+          - name: account_id
+            tests: [not_null, unique]
+      - name: opportunity
+        columns:
+          - name: opportunity_id
+            tests: [not_null, unique]
+
+  # Product telemetry RAW (append-only, loaded by the Python/ADLS ingestion)
+  - name: product_events
+    database: "{{ target.database }}"
+    schema: PRODUCT_EVENTS_RAW_ADLS
+    description: Page-view telemetry from ADLS. Full set lands here (incl. malformed); staging cleans + dedups.
+    tables:
+      - name: page_views
+        description: Append-only; row-level event_id dedup happens in stg_product_events__page_views.

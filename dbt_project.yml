@@ -1,0 +1,28 @@
+# ============================================================================
+# og_hub — the HUB dbt project (dbt Mesh).
+#   staging  -> OG_<ENV>_DB.STAGING        (typed/cleaned, deduped)
+#   marts    -> OG_<ENV>_DB.MARTS_REVOPS   (business marts; mart_revops__pipeline
+#               is a PUBLIC model a domain SPOKE repo consumes cross-project)
+# Runs on Snowflake's native dbt feature as REVOPS_DEVELOPER. A future spoke
+# repo reads MARTS_REVOPS (read-only) and writes its own MARTS_<domain>.
+# ============================================================================
+
+name: "og_hub"
+version: "1.0.0"
+config-version: 2
+
+profile: "og_hub"
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+
+models:
+  og_hub:
+    staging:
+      +schema: STAGING
+      +materialized: view
+    marts:
+      +schema: MARTS_REVOPS
+      +materialized: table

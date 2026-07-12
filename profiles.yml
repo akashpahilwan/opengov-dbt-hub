@@ -1,0 +1,30 @@
+# Snowflake native dbt supplies the connection (account/user/auth) from the
+# executing session; database/role/warehouse come from the DBT PROJECT object's
+# context (REVOPS_DEVELOPER, OG_<ENV>_DB, TRANSFORM wh). These env-var fields let
+# the same project also run from dbt-core locally. schema is the DEFAULT landing;
+# per-folder +schema (STAGING / MARTS_REVOPS) overrides it via generate_schema_name.
+og_hub:
+  target: "{{ env_var('DBT_TARGET', 'dev') }}"
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SF_ORGANIZATION_NAME', '') }}-{{ env_var('SF_ACCOUNT_NAME', '') }}"
+      user: "{{ env_var('SF_USERNAME', 'OG_DBT_SVC') }}"
+      authenticator: SNOWFLAKE_JWT
+      private_key_path: "{{ env_var('SF_PRIVATE_KEY_PATH', '') }}"
+      role: REVOPS_DEVELOPER
+      database: OG_DEV_DB
+      warehouse: OG_DEV_TRANSFORM_XS_WH
+      schema: STAGING
+      threads: 4
+    prod:
+      type: snowflake
+      account: "{{ env_var('SF_ORGANIZATION_NAME', '') }}-{{ env_var('SF_ACCOUNT_NAME', '') }}"
+      user: "{{ env_var('SF_USERNAME', 'OG_DBT_SVC') }}"
+      authenticator: SNOWFLAKE_JWT
+      private_key_path: "{{ env_var('SF_PRIVATE_KEY_PATH', '') }}"
+      role: REVOPS_DEVELOPER
+      database: OG_PROD_DB
+      warehouse: OG_PROD_TRANSFORM_XS_WH
+      schema: STAGING
+      threads: 4

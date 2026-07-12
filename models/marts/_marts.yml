@@ -48,3 +48,17 @@ models:
               values: ['Early Stage', 'Late Stage', 'Closed']
       - name: weighted_amount
         data_type: number
+
+  - name: mart_revops__tag_demo
+    description: >
+      Demo model — shows dbt applying a Snowflake column tag during build.
+      revenue_amount is classified PII_FINANCIAL, so the apply_column_tags
+      post-hook tags it and the masking policy hides it from non-admins.
+    columns:
+      - name: demo_id
+        data_type: number
+      - name: revenue_amount
+        data_type: number(18,2)
+        description: Sensitive financial figure — masked below REVOPS_ADMIN via the tag.
+        meta:
+          pii_tag: { name: PII_FINANCIAL, value: arr }

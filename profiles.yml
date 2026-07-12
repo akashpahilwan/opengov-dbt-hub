@@ -15,9 +15,17 @@ og_hub:
       type: snowflake
       account: "{{ env_var('SF_ORGANIZATION_NAME', '') }}-{{ env_var('SF_ACCOUNT_NAME', '') }}"
       user: "{{ env_var('SF_USERNAME', '') }}"
-      authenticator: SNOWFLAKE_JWT
+      # Key-pair by default (this account has no SSO/SAML for externalbrowser).
+      # Point SF_PRIVATE_KEY_PATH at your .p8; register the public key on your
+      # user with ALTER USER ... SET RSA_PUBLIC_KEY. On accounts WITH SSO, set
+      # SF_AUTHENTICATOR=externalbrowser instead (no keys).
+      # (Native dbt-on-Snowflake ignores these and uses the session identity.)
+      authenticator: "{{ env_var('SF_AUTHENTICATOR', 'SNOWFLAKE_JWT') }}"
       private_key_path: "{{ env_var('SF_PRIVATE_KEY_PATH', '') }}"
-      role: REVOPS_READER            # reads all layers; sandbox WRITE is a direct grant to the user
+      # Composite dev role (DEV_<NAME>) = REVOPS_READER + own-sandbox write, so a
+      # single PRIMARY role reads all layers AND writes the sandbox (no reliance
+      # on secondary roles). Falls back to REVOPS_READER if unset.
+      role: "{{ env_var('SF_DEV_ROLE', 'REVOPS_READER') }}"
       database: OG_DEV_DB
       warehouse: OG_DEV_READER_WH
       schema: "{{ env_var('DBT_DEV_SCHEMA', 'REVOPS_DEV_SANDBOX') }}"

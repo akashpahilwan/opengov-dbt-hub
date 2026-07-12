@@ -5,8 +5,15 @@
 -- Latest row per event_id wins (by _loaded_at), so re-landed/backfilled events
 -- and in-file duplicates collapse to one.
 
+{{ config(unique_key='event_id') }}
+
+-- Incremental MERGE on event_id; CDC on _loaded_at (only rows loaded since the
+-- last run). In-batch dedup by QUALIFY below, cross-batch upsert by the merge.
 with source as (
     select * from {{ source('product_events', 'page_views') }}
+    {% if is_incremental() %}
+    where _loaded_at > (select coalesce(max(_loaded_at), '1900-01-01'::timestamp_ntz) from {{ this }})
+    {% endif %}
 )
 
 select

@@ -2,8 +2,14 @@
 -- clean_string macro, and EXCLUDE soft-deleted rows (Fivetran is_deleted).
 -- (The brief's "filter is_deleted" = drop deleted records from the clean layer.)
 
+{{ config(unique_key='opportunity_id') }}
+
+-- Incremental MERGE on opportunity_id; CDC on _fivetran_synced.
 with source as (
     select * from {{ source('salesforce', 'opportunity') }}
+    {% if is_incremental() %}
+    where _fivetran_synced > (select coalesce(max(_fivetran_synced), '1900-01-01'::timestamp_ntz) from {{ this }})
+    {% endif %}
 )
 
 select

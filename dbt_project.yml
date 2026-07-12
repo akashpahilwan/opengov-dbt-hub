@@ -22,8 +22,13 @@ models:
   og_hub:
     staging:
       +schema: STAGING
-      +materialized: view
-      # Re-apply column tags on staging too (views) — governance is explicit per
+      # Incremental + MERGE: only new/changed source rows are processed each run
+      # (CDC), upserted on the model's unique_key. First run builds full; later
+      # runs merge the delta. unique_key + CDC column are set per model.
+      +materialized: incremental
+      +incremental_strategy: merge
+      +on_schema_change: append_new_columns
+      # Re-apply column tags on staging (now tables) — governance explicit per
       # model, so a cast can never silently drop masking.
       +post-hook: "{{ apply_column_tags() }}"
     marts:

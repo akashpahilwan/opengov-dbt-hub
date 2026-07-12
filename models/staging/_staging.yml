@@ -12,6 +12,10 @@ models:
     columns:
       - name: opportunity_id
         tests: [not_null, unique]
+      - name: amount
+        description: Deal value (financial PII) — masked here too so a cast can't leak it.
+        meta:
+          pii_tag: { name: PII_FINANCIAL, value: amount }
       - name: account_id
         description: FK to accounts.
         tests:

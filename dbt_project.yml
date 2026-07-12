@@ -23,6 +23,9 @@ models:
     staging:
       +schema: STAGING
       +materialized: view
+      # Re-apply column tags on staging too (views) — governance is explicit per
+      # model, so a cast can never silently drop masking.
+      +post-hook: "{{ apply_column_tags() }}"
     marts:
       +schema: MARTS_REVOPS
       +materialized: table

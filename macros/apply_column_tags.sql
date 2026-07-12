@@ -27,12 +27,14 @@
     {%- if target.name not in ['preprod', 'prod'] -%}
         {{ return('') }}
     {%- endif -%}
+    {#- views need ALTER VIEW, tables ALTER TABLE -#}
+    {%- set obj = 'VIEW' if model.config.materialized == 'view' else 'TABLE' -%}
     {%- set stmts = [] -%}
     {%- for col in model.get('columns', {}).values() -%}
         {%- set t = col.get('meta', {}).get('pii_tag') -%}
         {%- if t -%}
             {%- set _ = stmts.append(
-                "ALTER TABLE " ~ this ~ " MODIFY COLUMN " ~ col.name ~
+                "ALTER " ~ obj ~ " " ~ this ~ " MODIFY COLUMN " ~ col.name ~
                 " SET TAG " ~ this.database ~ ".GOVERNANCE." ~ t.name ~ " = '" ~ t.value ~ "'"
             ) -%}
         {%- endif -%}

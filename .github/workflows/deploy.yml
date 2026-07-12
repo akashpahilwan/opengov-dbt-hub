@@ -1,0 +1,34 @@
+name: Deploy dbt (native Snowflake)
+
+# CI-driven native dbt deploy (no scheduled TASK):
+#   push to dev  -> build --target preprod into OG_DEV_DB  (integration / QA)
+#   push to main -> build --target prod    into OG_PROD_DB (production)
+# The build runs IN Snowflake; this job just refreshes the DBT PROJECT from the
+# pushed branch and triggers EXECUTE DBT PROJECT.
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+concurrency:                      # one deploy per env at a time
+  group: dbt-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # GitHub Environment supplies the secrets + (for main) a manual approval gate.
+    environment: ${{ github.ref_name == 'main' && 'prod' || 'dev' }}
+    env:
+      SF_ORGANIZATION_NAME: ${{ secrets.SF_ORGANIZATION_NAME }}
+      SF_ACCOUNT_NAME: ${{ secrets.SF_ACCOUNT_NAME }}
+      SF_USERNAME: ${{ secrets.SF_USERNAME }}       # OG_DBT_SVC (holds REVOPS_DEVELOPER)
+      SF_PRIVATE_KEY: ${{ secrets.SF_PRIVATE_KEY }} # OG_DBT_SVC key-pair (PEM)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install "snowflake-connector-python" cryptography
+      - name: Refresh + build dbt on Snowflake
+        run: python ci/deploy_dbt.py --branch "${{ github.ref_name }}"

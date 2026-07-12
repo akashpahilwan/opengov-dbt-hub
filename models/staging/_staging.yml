@@ -3,12 +3,16 @@ version: 2
 models:
   - name: stg_salesforce__accounts
     description: Cleaned account dimension (ARR excluded — masked PII, stays in RAW).
+    config:
+      alias: accounts   # preprod/prod: STAGING.ACCOUNTS ; dev: <sandbox>.STAGING__accounts
     columns:
       - name: account_id
         tests: [not_null, unique]
 
   - name: stg_salesforce__opportunities
     description: Cleaned opportunities (soft-deleted excluded, stage_name normalized).
+    config:
+      alias: opportunities
     columns:
       - name: opportunity_id
         tests: [not_null, unique]
@@ -29,6 +33,8 @@ models:
 
   - name: stg_product_events__page_views
     description: Deduplicated (one row per event_id), contract-valid page views.
+    config:
+      alias: page_views
     columns:
       - name: event_id
         tests: [not_null, unique]

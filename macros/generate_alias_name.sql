@@ -9,9 +9,13 @@
      consumes MARTS_REVOPS.<alias>).
 -#}
 {% macro generate_alias_name(custom_alias_name, node) -%}
-    {%- if target.name in ['preprod', 'prod'] and custom_alias_name is not none -%}
-        {{ custom_alias_name | trim }}
+    {%- set base = (custom_alias_name | trim) if custom_alias_name is not none else node.name -%}
+    {%- if target.name in ['preprod', 'prod'] -%}
+        {#- deployment: the clean alias (or model name if none), in the real schema -#}
+        {{ base }}
     {%- else -%}
-        {{ node.name }}
+        {#- dev: <intended schema>__<alias|model>, so every layer's models coexist
+            distinguishably in the developer's single sandbox schema -#}
+        {{ node.config.schema }}__{{ base }}
     {%- endif -%}
 {%- endmacro %}

@@ -56,6 +56,8 @@ models:
           pii_tag: { name: PII_FINANCIAL, value: amount }
 
   - name: mart_revops__tag_demo
+    config:
+      alias: tag_demo
     description: >
       Demo model — shows dbt applying a Snowflake column tag during build.
       revenue_amount is classified PII_FINANCIAL, so the apply_column_tags

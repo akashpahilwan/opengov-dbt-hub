@@ -34,7 +34,10 @@ models:
       - name: stage_name
         data_type: varchar
       - name: amount
-        data_type: number
+        data_type: number(18,2)
+        description: Deal value — financial PII, masked below REVOPS_ADMIN.
+        meta:
+          pii_tag: { name: PII_FINANCIAL, value: amount }
       - name: close_date
         data_type: date
       - name: created_date
@@ -47,7 +50,10 @@ models:
           - accepted_values:
               values: ['Early Stage', 'Late Stage', 'Closed']
       - name: weighted_amount
-        data_type: number
+        data_type: number(18,2)
+        description: Forecast $ (amount x win prob) — financial PII, masked below REVOPS_ADMIN.
+        meta:
+          pii_tag: { name: PII_FINANCIAL, value: amount }
 
   - name: mart_revops__tag_demo
     description: >

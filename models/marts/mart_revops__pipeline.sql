@@ -38,14 +38,14 @@ final as (
         end as pipeline_stage_bucket,
 
         -- stage win-probability (simple, explainable forecast weighting)
-        o.amount * case o.stage_name
+        (o.amount * case o.stage_name
             when 'PROSPECTING'   then 0.10
             when 'QUALIFICATION' then 0.25
             when 'NEGOTIATION'   then 0.60
             when 'CLOSED WON'    then 1.00
             when 'CLOSED LOST'   then 0.00
             else 0.50
-        end as weighted_amount
+        end)::number(18, 2) as weighted_amount
 
     from opportunities o
     left join accounts a on o.account_id = a.account_id

@@ -11,7 +11,10 @@ select
     account_id::varchar                   as account_id,
     owner_id::varchar                     as owner_id,
     {{ clean_string('stage_name') }}      as stage_name,
-    amount::number(18, 2)                 as amount,
+    -- pass-through (no cast) so the RAW masking policy PROPAGATES through this
+    -- view: readers see NULL here, dbt (exempt) reads the real value for the mart.
+    -- amount is already NUMBER(18,2) in RAW, so no cast is needed.
+    amount                                as amount,
     close_date::date                      as close_date,
     created_date::timestamp_ntz           as created_date,
     last_modified_date::timestamp_ntz     as last_modified_date,

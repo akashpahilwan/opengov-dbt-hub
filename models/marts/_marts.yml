@@ -9,6 +9,10 @@ models:
       (read-only) and build their own MARTS_<domain>.
     access: public
     config:
+      # Deployment (preprod/prod) object name via generate_alias_name:
+      #   preprod/prod -> MARTS_REVOPS.REVOPS_PIPELINE (stable public name a spoke refs)
+      #   dev          -> <sandbox>.mart_revops__pipeline (model name, per macro)
+      alias: revops_pipeline
       contract:
         enforced: true
     columns:

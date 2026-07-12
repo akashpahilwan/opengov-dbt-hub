@@ -1,12 +1,29 @@
-# Snowflake native dbt supplies the connection (account/user/auth) from the
-# executing session; database/role/warehouse come from the DBT PROJECT object's
-# context (REVOPS_DEVELOPER, OG_<ENV>_DB, TRANSFORM wh). These env-var fields let
-# the same project also run from dbt-core locally. schema is the DEFAULT landing;
-# per-folder +schema (STAGING / MARTS_REVOPS) overrides it via generate_schema_name.
+# Native dbt on Snowflake supplies the connection (account/user/auth) from the
+# executing session; role/warehouse/database/schema come from the target below.
+# The env-var fields let the same project also run from dbt-core locally.
+#
+# THREE targets, matched by the generate_schema_name / generate_alias_name macros:
+#   dev      an individual developer — models land in THEIR sandbox schema
+#            (REVOPS_DEV_<NAME>), keeping their model names; reads via REVOPS_READER
+#   preprod  scheduled job in the DEV database — real schemas (STAGING/MARTS_REVOPS)
+#   prod     scheduled job in the PROD database — real schemas
 og_hub:
-  target: "{{ env_var('DBT_TARGET', 'dev') }}"
+  target: "{{ env_var('DBT_TARGET', 'preprod') }}"
   outputs:
-    dev:
+
+    dev:  # individual developer sandbox (set DBT_DEV_SCHEMA to REVOPS_DEV_<you>)
+      type: snowflake
+      account: "{{ env_var('SF_ORGANIZATION_NAME', '') }}-{{ env_var('SF_ACCOUNT_NAME', '') }}"
+      user: "{{ env_var('SF_USERNAME', '') }}"
+      authenticator: SNOWFLAKE_JWT
+      private_key_path: "{{ env_var('SF_PRIVATE_KEY_PATH', '') }}"
+      role: REVOPS_READER            # reads all layers; sandbox WRITE is a direct grant to the user
+      database: OG_DEV_DB
+      warehouse: OG_DEV_TRANSFORM_XS_WH
+      schema: "{{ env_var('DBT_DEV_SCHEMA', 'REVOPS_DEV_SANDBOX') }}"
+      threads: 4
+
+    preprod:  # scheduled dbt job, DEV database, real governed schemas
       type: snowflake
       account: "{{ env_var('SF_ORGANIZATION_NAME', '') }}-{{ env_var('SF_ACCOUNT_NAME', '') }}"
       user: "{{ env_var('SF_USERNAME', 'OG_DBT_SVC') }}"
@@ -15,9 +32,10 @@ og_hub:
       role: REVOPS_DEVELOPER
       database: OG_DEV_DB
       warehouse: OG_DEV_TRANSFORM_XS_WH
-      schema: STAGING
+      schema: STAGING                # default; per-model +schema overrides (STAGING/MARTS_REVOPS)
       threads: 4
-    prod:
+
+    prod:  # scheduled dbt job, PROD database, real governed schemas
       type: snowflake
       account: "{{ env_var('SF_ORGANIZATION_NAME', '') }}-{{ env_var('SF_ACCOUNT_NAME', '') }}"
       user: "{{ env_var('SF_USERNAME', 'OG_DBT_SVC') }}"

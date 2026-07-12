@@ -35,9 +35,7 @@ models:
         data_type: varchar
       - name: amount
         data_type: number(18,2)
-        description: Deal value — financial PII, masked below REVOPS_ADMIN.
-        meta:
-          pii_tag: { name: PII_FINANCIAL, value: amount }
+        description: Deal value. Masked in RAW below REVOPS_ADMIN; VISIBLE here — the mart is the governed, analyst-facing view.
       - name: close_date
         data_type: date
       - name: created_date
@@ -51,9 +49,7 @@ models:
               values: ['Early Stage', 'Late Stage', 'Closed']
       - name: weighted_amount
         data_type: number(18,2)
-        description: Forecast $ (amount x win prob) — financial PII, masked below REVOPS_ADMIN.
-        meta:
-          pii_tag: { name: PII_FINANCIAL, value: amount }
+        description: Forecast $ (amount x win prob); visible in the governed mart.
 
   - name: mart_revops__tag_demo
     description: >

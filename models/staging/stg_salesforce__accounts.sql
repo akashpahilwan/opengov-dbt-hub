@@ -2,7 +2,12 @@
 -- selected — it is masked PII (only REVOPS_ADMIN sees it) and dbt runs as
 -- REVOPS_DEVELOPER, so pulling it here would persist NULLs. Keep it in RAW.
 
-{{ config(unique_key='account_id') }}
+{{ config(
+    materialized='incremental',
+    incremental_strategy='merge',
+    unique_key='account_id',
+    on_schema_change='append_new_columns'
+) }}
 
 -- Incremental MERGE on account_id; CDC on _fivetran_synced.
 with source as (

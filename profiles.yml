@@ -19,7 +19,7 @@ og_hub:
       private_key_path: "{{ env_var('SF_PRIVATE_KEY_PATH', '') }}"
       role: REVOPS_READER            # reads all layers; sandbox WRITE is a direct grant to the user
       database: OG_DEV_DB
-      warehouse: OG_DEV_TRANSFORM_XS_WH
+      warehouse: OG_DEV_READER_WH
       schema: "{{ env_var('DBT_DEV_SCHEMA', 'REVOPS_DEV_SANDBOX') }}"
       threads: 4
 
@@ -31,7 +31,7 @@ og_hub:
       private_key_path: "{{ env_var('SF_PRIVATE_KEY_PATH', '') }}"
       role: REVOPS_DEVELOPER
       database: OG_DEV_DB
-      warehouse: OG_DEV_TRANSFORM_XS_WH
+      warehouse: OG_DEV_DEVELOPER_WH
       schema: STAGING                # default; per-model +schema overrides (STAGING/MARTS_REVOPS)
       threads: 4
 
@@ -43,6 +43,6 @@ og_hub:
       private_key_path: "{{ env_var('SF_PRIVATE_KEY_PATH', '') }}"
       role: REVOPS_DEVELOPER
       database: OG_PROD_DB
-      warehouse: OG_PROD_TRANSFORM_XS_WH
+      warehouse: OG_PROD_DEVELOPER_WH
       schema: STAGING
       threads: 4

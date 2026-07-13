@@ -12,6 +12,26 @@ flowchart LR
   exec --> sf[("OG_&lt;ENV&gt;_DB<br/>STAGING · MARTS_REVOPS")]
 ```
 
+## Environments — which env is DEV / QA / PROD
+
+```mermaid
+flowchart LR
+  subgraph OG_DEV_DB
+    sb["DEV<br/>per-developer sandboxes<br/>REVOPS_DEV_&lt;NAME&gt;<br/>(dbt --target dev)"]
+    pp["QA / preprod<br/>real STAGING + MARTS<br/>(dbt --target preprod)"]
+  end
+  subgraph OG_PROD_DB
+    pr["PROD<br/>real STAGING + MARTS<br/>(dbt --target prod)"]
+  end
+  feat["feature/&lt;you&gt;"] --> sb
+  devb["merge → dev branch"] --> pp
+  mainb["merge → main branch"] --> pr
+```
+
+- **DEV** and **QA/preprod** both live in `OG_DEV_DB` — dev is your isolated
+  sandbox; preprod is the shared integration build on merge to `dev`.
+- **PROD** is `OG_PROD_DB`, built on merge to `main` (protected environment).
+
 ## Auto-deploy on push — [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)
 
 | Push to | Target | Database |

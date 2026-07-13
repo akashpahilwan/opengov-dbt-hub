@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: "Target branch / env  (dev → preprod / OG_DEV_DB, main → prod / OG_PROD_DB)"
+        description: "Target branch / env  (dev -> preprod / OG_DEV_DB, main -> prod / OG_PROD_DB)"
         type: choice
         options: [dev, main]
         default: dev
@@ -42,9 +42,11 @@ jobs:
       SF_PRIVATE_KEY: ${{ secrets.SF_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ inputs.branch }} }
+        with:
+          ref: ${{ inputs.branch }}
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with:
+          python-version: "3.11"
       - run: pip install "snowflake-connector-python" cryptography
       - name: Full-refresh ALL models
         run: python ci/deploy_dbt.py --branch "${{ inputs.branch }}" --full-refresh
@@ -61,9 +63,12 @@ jobs:
       SF_PRIVATE_KEY: ${{ secrets.SF_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ inputs.branch }}, fetch-depth: 2 }   # need HEAD~1 for the diff
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 2                 # need HEAD~1 for the diff
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with:
+          python-version: "3.11"
       - run: pip install "snowflake-connector-python" cryptography
       - name: Detect models changed in the last commit
         id: changed

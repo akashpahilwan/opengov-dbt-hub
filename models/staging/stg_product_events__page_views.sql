@@ -43,4 +43,4 @@ where event_id is not null
   -- through (then ::varchar makes it NULL again). Filter on the CAST value so
   -- both a missing key and an explicit JSON null are excluded.
   and payload:user_id::varchar is not null
-qualify row_number() over (partition by event_id order by _loaded_at desc) = 1
+qualify row_number() over (partition by event_id order by event_timestamp desc,_loaded_at desc) = 1

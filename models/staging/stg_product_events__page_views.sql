@@ -38,5 +38,9 @@ from source
 where event_id is not null
   and account_id is not null
   and event_timestamp is not null
-  and payload:user_id is not null
+  -- user_id lives in the VARIANT payload: a JSON null ("user_id": null) is NOT
+  -- SQL NULL, so `payload:user_id IS NOT NULL` is TRUE for it and the row leaks
+  -- through (then ::varchar makes it NULL again). Filter on the CAST value so
+  -- both a missing key and an explicit JSON null are excluded.
+  and payload:user_id::varchar is not null
 qualify row_number() over (partition by event_id order by _loaded_at desc) = 1

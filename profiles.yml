@@ -15,12 +15,13 @@ og_hub:
       type: snowflake
       account: "{{ env_var('SF_ORGANIZATION_NAME', '') }}-{{ env_var('SF_ACCOUNT_NAME', '') }}"
       user: "{{ env_var('SF_USERNAME', '') }}"
-      # Key-pair by default (this account has no SSO/SAML for externalbrowser).
-      # Point SF_PRIVATE_KEY_PATH at your .p8; register the public key on your
-      # user with ALTER USER ... SET RSA_PUBLIC_KEY. On accounts WITH SSO, set
-      # SF_AUTHENTICATOR=externalbrowser instead (no keys).
+      # Devs authenticate with username + password (this account has no SSO):
+      # pass SF_USERNAME (the LOGIN_NAME / email) + SF_PASSWORD. Alternatives via
+      # env: key-pair (SF_AUTHENTICATOR=SNOWFLAKE_JWT + SF_PRIVATE_KEY_PATH) or
+      # SSO (SF_AUTHENTICATOR=externalbrowser, where an IdP exists).
       # (Native dbt-on-Snowflake ignores these and uses the session identity.)
-      authenticator: "{{ env_var('SF_AUTHENTICATOR', 'SNOWFLAKE_JWT') }}"
+      authenticator: "{{ env_var('SF_AUTHENTICATOR', 'snowflake') }}"
+      password: "{{ env_var('SF_PASSWORD', '') }}"
       private_key_path: "{{ env_var('SF_PRIVATE_KEY_PATH', '') }}"
       # Composite dev role (DEV_<NAME>) = REVOPS_READER + own-sandbox write, so a
       # single PRIMARY role reads all layers AND writes the sandbox (no reliance

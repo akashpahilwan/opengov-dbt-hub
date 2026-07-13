@@ -1,0 +1,82 @@
+name: dbt full-refresh (manual)
+
+# Manually-triggered full-refresh of incremental models. A normal deploy build
+# only MERGES new rows, so a logic change to an incremental model never re-cleans
+# rows already materialized — you need a --full-refresh (drop + rebuild).
+#
+# Two modes (pick with the `scope` input):
+#   all       — full-refresh EVERY model in the project
+#   modified  — full-refresh ONLY the models whose .sql changed in the last commit
+#
+# Run it from:  GitHub → Actions → "dbt full-refresh (manual)" → Run workflow
+#               (choose branch dev|main and scope all|modified)
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Target branch / env  (dev → preprod / OG_DEV_DB, main → prod / OG_PROD_DB)"
+        type: choice
+        options: [dev, main]
+        default: dev
+      scope:
+        description: "modified = only models changed in the last commit; all = every model"
+        type: choice
+        options: [modified, all]
+        default: modified
+
+concurrency:                         # never overlap with a normal deploy of the same env
+  group: dbt-${{ inputs.branch }}
+  cancel-in-progress: false
+
+jobs:
+  # ── Mode 1: full-refresh EVERY model ────────────────────────────────────────
+  refresh-all:
+    if: ${{ inputs.scope == 'all' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.branch == 'main' && 'prod' || 'dev' }}
+    env:
+      SF_ORGANIZATION_NAME: ${{ secrets.SF_ORGANIZATION_NAME }}
+      SF_ACCOUNT_NAME: ${{ secrets.SF_ACCOUNT_NAME }}
+      SF_USERNAME: ${{ secrets.SF_USERNAME }}
+      SF_PRIVATE_KEY: ${{ secrets.SF_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: ${{ inputs.branch }} }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install "snowflake-connector-python" cryptography
+      - name: Full-refresh ALL models
+        run: python ci/deploy_dbt.py --branch "${{ inputs.branch }}" --full-refresh
+
+  # ── Mode 2: full-refresh ONLY models changed in the last commit ─────────────
+  refresh-modified:
+    if: ${{ inputs.scope == 'modified' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.branch == 'main' && 'prod' || 'dev' }}
+    env:
+      SF_ORGANIZATION_NAME: ${{ secrets.SF_ORGANIZATION_NAME }}
+      SF_ACCOUNT_NAME: ${{ secrets.SF_ACCOUNT_NAME }}
+      SF_USERNAME: ${{ secrets.SF_USERNAME }}
+      SF_PRIVATE_KEY: ${{ secrets.SF_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: ${{ inputs.branch }}, fetch-depth: 2 }   # need HEAD~1 for the diff
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install "snowflake-connector-python" cryptography
+      - name: Detect models changed in the last commit
+        id: changed
+        run: |
+          models=$(git diff --name-only HEAD~1 HEAD -- 'models/**/*.sql' \
+                   | xargs -r -n1 basename | sed 's/\.sql$//' | sort -u | paste -sd' ' -)
+          echo "models=$models" >> "$GITHUB_OUTPUT"
+          echo "Changed models: ${models:-<none>}"
+      - name: Full-refresh changed models
+        run: |
+          if [ -z "${{ steps.changed.outputs.models }}" ]; then
+            echo "No model .sql changed in the last commit — nothing to full-refresh."
+            exit 0
+          fi
+          python ci/deploy_dbt.py --branch "${{ inputs.branch }}" --full-refresh \
+            --select "${{ steps.changed.outputs.models }}"

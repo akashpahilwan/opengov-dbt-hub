@@ -58,6 +58,19 @@ def connect(env):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--branch", required=True)
+    ap.add_argument(
+        "--full-refresh",
+        action="store_true",
+        help="drop + rebuild incremental models. Use after a logic change to an "
+        "incremental model — a normal build only merges NEW rows and leaves "
+        "already-materialized rows untouched.",
+    )
+    ap.add_argument(
+        "--select",
+        default="",
+        dest="select",
+        help="dbt --select selectors (space-separated model names). Empty = all models.",
+    )
     args = ap.parse_args()
     if args.branch not in BRANCH_MAP:
         print(f"Branch '{args.branch}' is not a deploy branch — skipping.")
@@ -65,14 +78,16 @@ def main():
     env, target = BRANCH_MAP[args.branch]
     repo = f"OG_{env}_DB.DBT.OG_DBT_HUB_REPO"
     proj = f"OG_{env}_DB.DBT.OG_HUB"
+    fr = " --full-refresh" if args.full_refresh else ""
+    sel = f" --select {args.select}" if args.select.strip() else ""
 
     cur = connect(env).cursor()
     print(f"[{env}] fetching {args.branch} and refreshing DBT PROJECT ...")
     cur.execute(f"ALTER GIT REPOSITORY {repo} FETCH")
     cur.execute(f"CREATE OR REPLACE DBT PROJECT {proj} FROM '@{repo}/branches/{args.branch}'")
 
-    print(f"[{env}] EXECUTE DBT PROJECT {proj} build --target {target}")
-    cur.execute(f"EXECUTE DBT PROJECT {proj} ARGS='build --target {target}'")
+    print(f"[{env}] EXECUTE DBT PROJECT {proj} build --target {target}{fr}{sel}")
+    cur.execute(f"EXECUTE DBT PROJECT {proj} ARGS='build --target {target}{fr}{sel}'")
     row = cur.fetchone()
     success, _, log = row[0], row[1], row[2]
     print(log)

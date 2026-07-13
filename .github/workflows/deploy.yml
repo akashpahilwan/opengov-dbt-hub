@@ -8,6 +8,7 @@ name: Deploy dbt (native Snowflake)
 on:
   push:
     branches: [dev, main]
+    paths-ignore: ['**.md', 'docs/**']   # docs-only changes don't rebuild models
   workflow_dispatch:
 
 concurrency:                      # one deploy per env at a time

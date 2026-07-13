@@ -19,8 +19,16 @@ with source as (
     {% if is_incremental() %}
     where _loaded_at > (select coalesce(max(_loaded_at), '1900-01-01'::timestamp_ntz) from {{ this }})
     {% endif %}
+),
+latest as (
+    select * from source
+    -- contract: keep only valid events (malformed full-set rows stay in RAW only)
+    where event_id is not null
+        and account_id is not null
+        and event_timestamp is not null
+        and payload:user_id is not null
+    qualify row_number() over (partition by event_id order by _loaded_at desc) = 1
 )
-
 select
     event_id::varchar                                  as event_id,
     account_id::varchar                                as account_id,
@@ -33,10 +41,6 @@ select
     payload:properties.duration_ms::int                as duration_ms,
     _filename                                          as _source_file,
     _loaded_at                                         as _loaded_at
-from source
+from latest
 -- contract: keep only valid events (malformed full-set rows stay in RAW only)
-where event_id is not null
-  and account_id is not null
-  and event_timestamp is not null
-  and payload:user_id is not null
-qualify row_number() over (partition by event_id order by _loaded_at desc) = 1
+

@@ -15,6 +15,14 @@ with source as (
     {% if is_incremental() %}
     where _fivetran_synced > (select coalesce(max(_fivetran_synced), '1900-01-01'::timestamp_ntz) from {{ this }})
     {% endif %}
+),
+
+-- latest record per opportunity_id (by _fivetran_synced) BEFORE the is_deleted
+-- filter — so a delete that arrives as the newest version correctly removes the
+-- row rather than resurrecting an older, non-deleted one.
+latest as (
+    select * from source
+    qualify row_number() over (partition by opportunity_id order by _fivetran_synced desc) = 1
 )
 
 select
@@ -27,5 +35,5 @@ select
     created_date::timestamp_ntz           as created_date,
     last_modified_date::timestamp_ntz     as last_modified_date,
     _fivetran_synced::timestamp_ntz       as _fivetran_synced
-from source
-where not is_deleted   -- drop soft-deleted opportunities
+from latest
+where not is_deleted   -- drop soft-deleted opportunities (after picking latest)

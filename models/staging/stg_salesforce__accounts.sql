@@ -15,8 +15,11 @@ with source as (
     {% if is_incremental() %}
     where _fivetran_synced > (select coalesce(max(_fivetran_synced), '1900-01-01'::timestamp_ntz) from {{ this }})
     {% endif %}
+),
+latest as (
+    select * from source
+    qualify row_number() over (partition by account_id order by _fivetran_synced desc) = 1
 )
-
 select
     account_id::varchar                    as account_id,
     account_name::varchar                  as account_name,
@@ -25,4 +28,4 @@ select
     {{ clean_string('customer_tier') }}    as customer_tier,
     created_date::timestamp_ntz            as created_date,
     _fivetran_synced::timestamp_ntz        as _fivetran_synced
-from source
+from latest

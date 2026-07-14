@@ -18,13 +18,6 @@ macro-paths: ["macros"]
 seed-paths: ["seeds"]
 test-paths: ["tests"]
 
-vars:
-  # Incremental staging lookback window (hours). Each incremental run of
-  # stg_product_events__page_views rescans this trailing window of loads and
-  # MERGEs on event_id — mirrors the ingestion job's --lookback-hours. Override
-  # per run with `--vars '{lookback_hours: N}'`. Full-refresh ignores it.
-  lookback_hours: 48
-
 models:
   og_hub:
     staging:

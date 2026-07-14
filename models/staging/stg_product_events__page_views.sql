@@ -12,12 +12,15 @@
     on_schema_change='append_new_columns'
 ) }}
 
--- Incremental MERGE on event_id; CDC on _loaded_at (only rows loaded since the
--- last run). In-batch dedup by QUALIFY below, cross-batch upsert by the merge.
+-- Incremental MERGE on event_id, scanning a trailing LOOKBACK WINDOW of loads
+-- (var lookback_hours, default 48) instead of a strict high-watermark — so
+-- late-arriving / resent events within the window get re-merged. Mirrors the
+-- ingestion job's --lookback-hours. Full-refresh skips this branch and rebuilds
+-- the entire history. In-window dedup by QUALIFY below; upsert by the merge.
 with source as (
     select * from {{ source('product_events', 'page_views') }}
     {% if is_incremental() %}
-    where _loaded_at > (select coalesce(max(_loaded_at), '1900-01-01'::timestamp_ntz) from {{ this }})
+    where _loaded_at >= dateadd('hour', -{{ var('lookback_hours', 48) }}, current_timestamp())
     {% endif %}
 )
 
